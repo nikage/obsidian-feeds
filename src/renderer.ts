@@ -30,6 +30,35 @@ export default class FeedRenderer extends RefreshableRenderer {
 
   async run() {
     const settings = this.getSettings();
+
+    // Build the search tokens once so we can reuse them in different predicates.
+    const searchFor = settings.searchFor.replaceAll(
+      "[[#]]",
+      `[[${this.file.basename}]]`,
+    );
+    const searchForLinks: RegExpMatchArray | string[] =
+      searchFor.match(/\[\[(.*?)\]\]/g) ?? [];
+    const searchForTags: RegExpMatchArray | string[] =
+      searchFor.match(/#[^\s,#]+/g) ?? [];
+
+    // Helper: cache page-level tags to avoid repeated API calls.
+    const pageTagsCache = new Map<string, string[]>();
+    const getPageTags = (listItem: Literal): string[] => {
+      const path = (listItem as any).path ?? listItem.section?.path ?? listItem.link?.path;
+      if (!path) return [];
+      if (!pageTagsCache.has(path)) {
+        const page = this.dvApi.page(path);
+        const tags: string[] = ((page as any)?.tags ?? []) as string[];
+        pageTagsCache.set(path, tags);
+      }
+      return pageTagsCache.get(path)!;
+    };
+
+    const tagMatcher = (tags: string[] | undefined) =>
+      tags?.some(t =>
+        searchForTags.some(tt => t?.toLowerCase().includes(tt?.toLowerCase())),
+      );
+
     const isMatch = (l: Literal) =>
       l.section.subpath?.toLowerCase() === this.file.basename?.toLowerCase() ||
       l.outlinks?.some((o: Literal) =>
@@ -37,9 +66,8 @@ export default class FeedRenderer extends RefreshableRenderer {
           sfl => sfl?.toLowerCase() === `[[${o.fileName()?.toLowerCase()}]]`,
         ),
       ) ||
-      l.tags?.some((t: string) =>
-        searchForTags.some(tt => t?.toLowerCase().includes(tt?.toLowerCase())),
-      );
+      tagMatcher(l.tags) ||
+      tagMatcher(getPageTags(l));
 
     const tree = (listItem: ListItem) => {
       // attention: this mutates the list item
@@ -111,14 +139,6 @@ export default class FeedRenderer extends RefreshableRenderer {
       return false;
     };
 
-    const searchFor = settings.searchFor.replaceAll(
-      "[[#]]",
-      `[[${this.file.basename}]]`,
-    );
-    const searchForLinks: RegExpMatchArray | string[] =
-      searchFor.match(/\[\[(.*?)\]\]/g) ?? [];
-    const searchForTags: RegExpMatchArray | string[] =
-      searchFor.match(/#[^\s,#]+/g) ?? [];
     const searchQuery = [...searchForLinks, ...searchForTags].join(" OR ");
 
     const query =
@@ -138,12 +158,17 @@ export default class FeedRenderer extends RefreshableRenderer {
           : isMatch,
       )
       .flatMap(
-        settings.showTree ? tree : (l: Literal) => (showParent(l) ? [l] : l.children),
+        settings.showTree
+          ? tree
+          : (l: Literal) => (showParent(l) ? [l] : l.children),
       )
       .filter(
-        (l: Literal) => !settings.onlyWithTasks || someOfMeAndMyChildren(l, showTask),
+        (l: Literal) =>
+          !settings.onlyWithTasks || someOfMeAndMyChildren(l, showTask),
       )
-      .groupBy((l: Literal) => (settings.groupBySection ? l.link : l.link.toFile()))
+      .groupBy((l: Literal) =>
+        settings.groupBySection ? l.link : l.link.toFile(),
+      )
       .sort(
         (l: Literal) => (settings.sortByPath ? l : l.key.fileName()),
         settings.sort,

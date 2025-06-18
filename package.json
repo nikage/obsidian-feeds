@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "install": "yarn build && node scripts/install.js",
     "prettier": "prettier --write 'src/**/*.+(ts|tsx|json|html|css)' 'styles.css'",
     "check-format": "npx prettier --check src",
     "eslint": "eslint . --ext .ts,.tsx --fix",

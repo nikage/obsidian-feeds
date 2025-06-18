@@ -33,7 +33,7 @@ obsidian-feeds/
 - Dataview plugin
 
 ## Installation
-See [Installation Guide](INSTALLATION.md) for detailed instructions.
+See [Installation Guide](INSTALLATION.md) for detailed instructions on various installation methods.
 
 ## Usage
 See [User Guide](USER_GUIDE.md) for detailed usage instructions.

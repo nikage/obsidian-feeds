@@ -28,7 +28,7 @@ searchFor: "#topic"
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| searchFor | string | Tags, links, or text to match. Supports `[[link]]` and `#tag` syntax. | "[[#]]" (current note) |
+| searchFor | string | Tags, links, or text to match. Supports `[[link]]` and `#tag` syntax. **Tags are matched both in page body and front-matter metadata.** | "[[#]]" (current note) |
 | sort | "asc" \| "desc" | Sort order (ascending/descending) | "desc" |
 | limit | number | Max items to show | 10 |
 | groupBy | string | Grouping key. Common: `file.folder`, `file.name` | – |
@@ -77,6 +77,20 @@ collapseHeaders: false
 pageLength: 10
 ```
 
+#### Filter by Folder
+```feed
+searchFor: "#notes"
+includeFolders:
+  - "Projects/2025"
+  - "Area/Work"
+excludeFolders:
+  - "Archive"
+```
+
+This will:
+- Search for `#notes` inside the `Projects/2025` and `Area/Work` folders only
+- Exclude anything inside the `Archive` folder
+
 This feed configuration:
 - Shows items tagged with #productivity
 - Displays newest items first
@@ -86,6 +100,20 @@ This feed configuration:
 - Removes redundant links
 - Provides copy and options functionality
 - Shows 10 items per page
+
+### Metadata (Front-matter) Tags
+
+Starting with version 0.0.12, Feeds also looks at tags defined in a note's front-matter. That means a note with YAML like:
+
+```yaml
+---
+tags: [productivity, reference]
+---
+```
+
+will be returned by a feed that searches for `#productivity` even if that tag never appears in the body text.
+
+There is nothing special you need to do—just ensure the tag appears in the front-matter `tags` field.
 
 ## Advanced Features
 
