@@ -24,3 +24,5 @@ yarn-error.log
 
 # macOS finder
 .DS_Store
+
+docs/CHANGELOG.md
